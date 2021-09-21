@@ -1074,7 +1074,7 @@ def test_verify_keyjar_update():
     alice_keyjar.add_kb("", kb=kb_a)
 
     _jwks = {"keys": [jwk]}
-    fname = "tmp_jwks.json"
+    fname = full_path("tmp_jwks.json")
     with open(fname, "w") as fp:
         fp.write(json.dumps(_jwks))
     kb_b = KeyBundle(source="file://{}".format(fname), fileformat="jwks")
