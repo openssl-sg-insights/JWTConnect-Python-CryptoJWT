@@ -25,13 +25,13 @@ class KeyJar(object):
     """ A keyjar contains a number of KeyBundles sorted by owner/issuer """
 
     def __init__(
-        self,
-        ca_certs=None,
-        verify_ssl=True,
-        keybundle_cls=KeyBundle,
-        remove_after=3600,
-        httpc=None,
-        httpc_params=None,
+            self,
+            ca_certs=None,
+            verify_ssl=True,
+            keybundle_cls=KeyBundle,
+            remove_after=3600,
+            httpc=None,
+            httpc_params=None,
     ):
         """
         KeyJar init function
@@ -379,7 +379,7 @@ class KeyJar(object):
                     k.serialize(private)
                     for k in kb.keys()
                     if k.inactive_since == 0
-                    and (usage is None or (hasattr(k, "use") and k.use == usage))
+                       and (usage is None or (hasattr(k, "use") and k.use == usage))
                 ]
             )
         return {"keys": keys}
@@ -465,14 +465,14 @@ class KeyJar(object):
 
     @deprecated_alias(issuer="issuer_id", owner="issuer_id")
     def _add_key(
-        self,
-        keys,
-        issuer_id,
-        use,
-        key_type="",
-        kid="",
-        no_kid_issuer=None,
-        allow_missing_kid=False,
+            self,
+            keys,
+            issuer_id,
+            use,
+            key_type="",
+            kid="",
+            no_kid_issuer=None,
+            allow_missing_kid=False,
     ):
 
         _issuer = self._get_issuer(issuer_id)
@@ -486,6 +486,13 @@ class KeyJar(object):
             for _key in _issuer.get(use, kid=kid, key_type=key_type):
                 if _key and _key not in keys:
                     keys.append(_key)
+
+            if not keys:
+                _issuer.update()
+                for _key in _issuer.get(use, kid=kid, key_type=key_type):
+                    if _key:
+                        keys.append(_key)
+
             return keys
         else:
             try:
@@ -493,6 +500,10 @@ class KeyJar(object):
             except KeyError:
                 pass
             else:
+                if len(_add_keys) == 0:
+                    _issuer.update()
+                    _add_keys = _issuer.get(use, key_type=key_type)
+
                 if len(_add_keys) == 0:
                     return keys
                 elif len(_add_keys) == 1:
@@ -597,10 +608,10 @@ class KeyJar(object):
             keys = self._add_key([], _iss, "sig", _key_type, _kid, nki, allow_missing_kid)
 
             if _key_type == "oct":
-                keys.extend(self.get(key_use="sig", issuer_id="", key_type=_key_type))
+                keys.extend(self.get(key_use="sig", key_type=_key_type, kid=_kid))
         else:
-            # No issuer, just use all keys I have
-            keys = self.get(key_use="sig", issuer_id="", key_type=_key_type)
+            # No issuer, just use all keys I have that match kid, key_use and key_type
+            keys = self.get(key_use="sig", key_type=_key_type, kid=_kid)
 
         # Only want the appropriate keys.
         keys = [k for k in keys if k.appropriate_for("verify")]
@@ -627,9 +638,9 @@ class KeyJar(object):
         return len(self._issuers)
 
     def _dump_issuers(
-        self,
-        exclude_issuers: Optional[List[str]] = None,
-        exclude_attributes: Optional[List[str]] = None,
+            self,
+            exclude_issuers: Optional[List[str]] = None,
+            exclude_attributes: Optional[List[str]] = None,
     ):
         _issuers = {}
         for _id, _issuer in self._issuers.items():
@@ -639,9 +650,9 @@ class KeyJar(object):
         return _issuers
 
     def dump(
-        self,
-        exclude_issuers: Optional[List[str]] = None,
-        exclude_attributes: Optional[List[str]] = None,
+            self,
+            exclude_issuers: Optional[List[str]] = None,
+            exclude_attributes: Optional[List[str]] = None,
     ) -> dict:
         """
         Returns the key jar content as dictionary
@@ -808,11 +819,11 @@ def build_keyjar(key_conf, kid_template="", keyjar=None, issuer_id=""):
 
 @deprecated_alias(issuer="issuer_id", owner="issuer_id")
 def init_key_jar(
-    public_path="",
-    private_path="",
-    key_defs="",
-    issuer_id="",
-    read_only=True,
+        public_path="",
+        private_path="",
+        key_defs="",
+        issuer_id="",
+        read_only=True,
 ):
     """
     A number of cases here:

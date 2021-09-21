@@ -4,6 +4,7 @@ import shutil
 import time
 import warnings
 
+from cryptojwt.jwk.rsa import new_rsa_key
 import pytest
 
 from cryptojwt.exception import IssuerNotFound
@@ -1063,3 +1064,45 @@ def test_similar():
     keys1 = kj.get_issuer_keys(ISSUER)
     keys2 = kj[ISSUER].all_keys()
     assert keys1 == keys2
+
+
+def test_verify_keyjar_update():
+    rsa_key = new_rsa_key()
+    jwk = rsa_key.serialize()
+    kb_a = KeyBundle(keys=[jwk])
+    alice_keyjar = KeyJar()
+    alice_keyjar.add_kb("", kb=kb_a)
+
+    _jwks = {"keys": [jwk]}
+    fname = "tmp_jwks.json"
+    with open(fname, "w") as fp:
+        fp.write(json.dumps(_jwks))
+    kb_b = KeyBundle(source="file://{}".format(fname), fileformat="jwks")
+
+    # Bob reads Alice's key from file
+    bob_keyjar = KeyJar()
+    bob_keyjar.add_kb("Alice", kb=kb_b)
+
+    # Create new Alice key. Fist step in rotating keys.
+    rsa_key2 = new_rsa_key()
+    kb_a.append(rsa_key2)
+
+    # Write the new set of keys to the key file. This is the local equivalent to updating the
+    # file a jwks_uri points to.
+    _jwks = {"keys": [jwk, rsa_key2.serialize()]}
+    time.sleep(0.5)
+    with open(fname, "w") as fp:
+        fp.write(json.dumps(_jwks))
+
+    # A message
+    _jws = JWS('{"aud": "Bob", "iss": "Alice"}', alg="RS256")
+    # Alice signs with the new key
+    sig_key = alice_keyjar.get_signing_key("rsa", issuer_id="", kid=rsa_key2.kid)
+    _signed_jwt = _jws.sign_compact(sig_key)
+
+    # Bob should first fail in finding a key but after updating the keyjar he should find the
+    # correct key
+    _jwt = factory(_signed_jwt)
+    keys = bob_keyjar.get_jwt_verify_keys(_jwt.jwt)
+    assert keys
+    assert keys[0].kid == rsa_key2.kid
