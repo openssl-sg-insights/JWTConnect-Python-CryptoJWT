@@ -10,7 +10,7 @@ __author__ = "jschlyter"
 
 DEFAULT_WRAP_PARAMS = {
     "EC": {"alg": "ECDH-ES+A128KW", "enc": "A128GCM"},
-    "RSA": {"alg": "RSA1_5", "enc": "A128CBC-HS256"},
+    "RSA": {"alg": "RSA-OAEP", "enc": "A128CBC-HS256"},
     "oct": {"alg": "A128KW", "enc": "A128CBC-HS256"},
 }
 
